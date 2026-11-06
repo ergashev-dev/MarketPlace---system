@@ -1,0 +1,74 @@
+import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service.js';
+import bcrypt from 'bcrypt';
+import { RegisterDTO } from './dto/register.dto.js';
+import { LoginDto } from './dto/login.dto.js';
+import { JwtService } from '@nestjs/jwt';
+import { Role } from '@prisma/client';
+
+@Injectable()
+export class AuthService {
+  constructor(private readonly prisma: PrismaService,
+    private jwtService: JwtService
+  ) {}
+
+  generateToken(user: {id: number, email: string, role: Role}) {
+    const token = this.jwtService.sign({
+      id: user.id,
+      email: user.email,
+      role: user.role
+    })
+  return token
+  }
+
+  async register(body: RegisterDTO) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: body.email },
+    });
+
+    if (existingUser) {
+      throw new ConflictException("Email ro'yxatdan o'tgan");
+    }
+
+    const hashedPassword = await bcrypt.hash(body.password, 10);
+
+    const user = await this.prisma.user.create({
+      data: {
+        fullName: body.fullName,
+        email: body.email,
+        phone: body.phone,
+        passwordHash: hashedPassword,
+      },
+    });
+
+    const { passwordHash, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+  async login(body: LoginDto) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        email: body.email
+      }
+    })
+    if (!user) {
+        throw new BadRequestException("Invalid user")
+      }
+      const isPasswordCorrect = await bcrypt.compare(body.password, user.passwordHash)
+      if (!isPasswordCorrect) {
+        throw new BadRequestException("parol xato")
+      }
+      const { passwordHash, ...userWithoutPassword } = user;
+
+      const token = this.generateToken({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      });
+
+      return {
+        message: 'login qilindi',
+        user: userWithoutPassword,
+        accessToken: token,
+      };
+  }
+}
