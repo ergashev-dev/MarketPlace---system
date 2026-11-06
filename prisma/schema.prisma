@@ -12,3 +12,100 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum ListingType {
+  SALE
+  RENT
+}
+
+enum PropertyStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  fullName     String
+  email        String   @unique
+  passwordHash String
+  phone        String?
+  role         Role     @default(USER)
+  createdAt    DateTime @default(now())
+
+  properties Property[]
+  favorites  Favorite[]
+  inquiries  Inquiry[]
+}
+
+model Category {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+  slug String @unique
+
+  properties Property[]
+}
+
+model Property {
+  id          Int            @id @default(autoincrement())
+  title       String
+  description String
+  price       Float
+  currency    String         @default("USD")
+  listingType ListingType
+  status      PropertyStatus @default(PENDING)
+  address     String
+  city        String
+  area        Float
+  rooms       Int
+  bathrooms   Int
+  createdAt   DateTime       @default(now())
+
+  ownerId    Int
+  owner      User     @relation(fields: [ownerId], references: [id])
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  images    PropertyImage[]
+  favorites Favorite[]
+  inquiries Inquiry[]
+}
+
+model PropertyImage {
+  id        Int     @id @default(autoincrement())
+  url       String
+  altText   String?
+  sortOrder Int     @default(0)
+
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id])
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, propertyId])
+}
+
+model Inquiry {
+  id        Int      @id @default(autoincrement())
+  message   String
+  phone     String
+  createdAt DateTime @default(now())
+
+  senderId   Int
+  sender     User     @relation(fields: [senderId], references: [id])
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
