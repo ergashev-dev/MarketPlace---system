@@ -71,4 +71,18 @@ export class AuthService {
         accessToken: token,
       };
   }
+  async me(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User topilmadi');
+    }
+
+    const { passwordHash, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
 }
