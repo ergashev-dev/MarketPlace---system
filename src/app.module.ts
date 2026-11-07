@@ -10,6 +10,7 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { AdminModule } from './admin/admin.module.js';
 import { FavoritesModule } from './favorites/favorites.module.js';
+import { InquiriesModule } from './inquiries/inquiries.module.js';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { FavoritesModule } from './favorites/favorites.module.js';
     PropertiesModule,
     AdminModule,
     FavoritesModule,
+    InquiriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
