@@ -1,6 +1,5 @@
 import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Observable } from 'rxjs';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
@@ -11,13 +10,13 @@ export class JwtAuthGuard implements CanActivate {
   ): boolean{
     const request = context.switchToHttp().getRequest()
 
-    const authHeader = request.headers.authoration
+    const authHeader = request.headers.authorization
 
-    if (!authHeader) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException('tokening bilan kel')
     }
 
-    const token = authHeader.split(" ")[0]
+    const token = authHeader.split(' ')[1];
 
     try {
       const payload = this.jwtService.verify(token)
