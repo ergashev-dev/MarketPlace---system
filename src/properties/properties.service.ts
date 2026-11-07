@@ -1,4 +1,5 @@
 import {
+    BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -6,6 +7,8 @@ import {
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreatePropertyDTO } from './dto/create-property.dto.js';
 import { UpdatePropertyDTO } from './dto/update-property.dto.js';
+import { Prisma } from '@prisma/client';
+import { QueryPropertyDTO } from './dto/query-property.dto.js';
 
 @Injectable()
 export class PropertiesService {
@@ -55,12 +58,96 @@ export class PropertiesService {
         },
       },
     });
+    
 
     if (!property || property.status !== 'APPROVED') {
       throw new NotFoundException("E'lon topilmadi");
     }
 
     return property;
+  }
+
+  async getMyProperties(userId: number) {
+    return this.prisma.property.findMany({
+      where: {
+        ownerId: userId,
+      },
+      include: {
+        images: { orderBy: { sortOrder: 'asc' } },
+        category: true,
+      },
+      orderBy: {createdAt: 'desc'}
+    });
+  }
+
+  async getProperties(query: QueryPropertyDTO) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 12;
+
+    if (
+      query.minPrice !== undefined &&
+      query.maxPrice !== undefined &&
+      query.minPrice > query.maxPrice
+    ) {
+      throw new BadRequestException(
+        "minPrice maxPrice'dan katta bo'lmasligi kerak",
+      );
+    }
+
+    const where: Prisma.PropertyWhereInput = {
+      status: 'APPROVED',
+    };
+
+    if (query.city) {
+      where.city = { contains: query.city, mode: 'insensitive' };
+    }
+
+    if (query.category) {
+      where.category = { slug: query.category };
+    }
+
+    if (query.type) {
+      where.listingType = query.type;
+    }
+
+    if (query.rooms !== undefined) {
+      where.rooms = query.rooms;
+    }
+
+    if (query.minPrice !== undefined || query.maxPrice !== undefined) {
+      const priceFilter: Prisma.FloatFilter = {};
+      if (query.minPrice !== undefined) priceFilter.gte = query.minPrice;
+      if (query.maxPrice !== undefined) priceFilter.lte = query.maxPrice;
+      where.price = priceFilter;
+    }
+
+    let orderBy: Prisma.PropertyOrderByWithRelationInput = { createdAt: 'desc' };
+    if (query.sort === 'price_asc') orderBy = { price: 'asc' };
+    if (query.sort === 'price_desc') orderBy = { price: 'desc' };
+
+    const [data, total] = await Promise.all([
+      this.prisma.property.findMany({
+        where,
+        orderBy,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          images: { take: 1, orderBy: { sortOrder: 'asc' } },
+          category: true,
+        },
+      }),
+      this.prisma.property.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async updateProperty(id: number, userId: number, body: UpdatePropertyDTO) {
