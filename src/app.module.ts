@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module.js';
 import { PropertiesModule } from './properties/properties.module.js';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { AdminModule } from './admin/admin.module.js';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { join } from 'path';
     CategoriesModule,
     UsersModule,
     PropertiesModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
