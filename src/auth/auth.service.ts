@@ -1,6 +1,7 @@
 import {
   ConflictException,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -82,5 +83,21 @@ export class AuthService {
       user: userWithoutPassword,
       accessToken: token,
     };
+  }
+
+  async me(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User mavjud emas');
+    }
+
+    const { passwordHash, ...userWithoutPassword } = user;
+
+    return userWithoutPassword;
   }
 }
