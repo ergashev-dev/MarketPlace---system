@@ -1,6 +1,7 @@
 import {
   IsEmail,
   IsNotEmpty,
+  IsOptional,
   IsPhoneNumber,
   IsString,
   Length,
@@ -25,5 +26,6 @@ export class RegisterDTO {
 
   @IsPhoneNumber('UZ')
   @IsString()
+  @IsOptional()
   phone?: string;
 }
