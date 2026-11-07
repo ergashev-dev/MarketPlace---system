@@ -6,9 +6,21 @@ import { AuthModule } from './auth/auth.module.js';
 import { CategoriesModule } from './categories/categories.module.js';
 import { UsersModule } from './users/users.module.js';
 import { PropertiesModule } from './properties/properties.module.js';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
-  imports: [PrismaModule, AuthModule, CategoriesModule, UsersModule, PropertiesModule],
+  imports: [
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+    }),
+    PrismaModule,
+    AuthModule,
+    CategoriesModule,
+    UsersModule,
+    PropertiesModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
