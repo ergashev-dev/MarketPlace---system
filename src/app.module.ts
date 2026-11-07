@@ -9,6 +9,7 @@ import { PropertiesModule } from './properties/properties.module.js';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { AdminModule } from './admin/admin.module.js';
+import { FavoritesModule } from './favorites/favorites.module.js';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { AdminModule } from './admin/admin.module.js';
     UsersModule,
     PropertiesModule,
     AdminModule,
+    FavoritesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
