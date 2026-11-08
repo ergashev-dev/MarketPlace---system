@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { UpdateRoleDTO } from './dto/update-role.dto.js';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { AdminQueryDTO } from './dto/admin-query.dto.js';
@@ -55,6 +61,39 @@ export class AdminService {
     return this.prisma.property.update({
       where: { id },
       data: { status: body.status },
+    });
+  }
+
+  async updateRole(id: number, body: UpdateRoleDTO, currentUserId: number) {
+    if (id === currentUserId) {
+      throw new BadRequestException("O'z rolingizni o'zgartira olmaysiz");
+    }
+
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('Foydalanuvchi topilmadi');
+    }
+
+    const superAdmin = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+    if (
+      superAdmin &&
+      user.email.toLowerCase() === superAdmin &&
+      body.role !== 'ADMIN'
+    ) {
+      throw new ForbiddenException("Asosiy adminning rolini o'zgartirib bo'lmaydi");
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data: { role: body.role },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        phone: true,
+        role: true,
+        createdAt: true,
+      },
     });
   }
 

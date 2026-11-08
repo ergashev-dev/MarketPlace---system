@@ -9,10 +9,14 @@ import { JwtModule } from '@nestjs/jwt';
   providers: [AuthService],
   imports: [
     PrismaModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET,
-      signOptions: {
-        expiresIn: '1h',
+    // registerAsync: factory ilova ishga tushganda (dotenv yuklangandan keyin) chaqiriladi
+    JwtModule.registerAsync({
+      useFactory: () => {
+        const secret = process.env.JWT_SECRET;
+        if (!secret) {
+          throw new Error('JWT_SECRET .env faylida berilmagan');
+        }
+        return { secret, signOptions: { expiresIn: '1h' } };
       },
     }),
   ],

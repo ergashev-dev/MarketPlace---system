@@ -5,8 +5,10 @@ import {
   Param,
   Patch,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
+import { UpdateRoleDTO } from './dto/update-role.dto.js';
 import { AdminService } from './admin.service.js';
 import { AdminQueryDTO } from './dto/admin-query.dto.js';
 import { UpdateStatusDTO } from './dto/update-status.dto.js';
@@ -33,5 +35,14 @@ export class AdminController {
   @Get('users')
   getUsers() {
     return this.adminService.getUsers();
+  }
+
+  @Patch('users/:id/role')
+  updateRole(
+    @Param('id') id: number,
+    @Body() body: UpdateRoleDTO,
+    @Req() req: any,
+  ) {
+    return this.adminService.updateRole(id, body, req.user.id);
   }
 }

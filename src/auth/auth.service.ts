@@ -1,7 +1,9 @@
 import {
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
+  OnApplicationBootstrap,
   UnauthorizedException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -12,11 +14,39 @@ import { JwtService } from '@nestjs/jwt';
 import type { Role } from '@prisma/client';
 
 @Injectable()
-export class AuthService {
+export class AuthService implements OnApplicationBootstrap {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
   ) {}
+
+  private get adminEmail(): string | undefined {
+    return process.env.ADMIN_EMAIL?.trim().toLowerCase() || undefined;
+  }
+
+  private isAdminEmail(email: string): boolean {
+    return !!this.adminEmail && email.trim().toLowerCase() === this.adminEmail;
+  }
+
+  // Ilova ishga tushganda: ADMIN_EMAIL egasi ro'yxatdan o'tgan bo'lsa, ADMIN qilinadi
+  async onApplicationBootstrap() {
+    if (!this.adminEmail) {
+      this.logger.warn('ADMIN_EMAIL berilmagan — admin tayinlanmadi');
+      return;
+    }
+    const { count } = await this.prisma.user.updateMany({
+      where: {
+        email: { equals: this.adminEmail, mode: 'insensitive' },
+        role: { not: 'ADMIN' },
+      },
+      data: { role: 'ADMIN' },
+    });
+    if (count > 0) {
+      this.logger.log(`${this.adminEmail} ADMIN qilib tayinlandi`);
+    }
+  }
 
   generateToken(user: { id: number; email: string; role: Role }) {
     const token = this.jwtService.sign({
@@ -45,6 +75,7 @@ export class AuthService {
         email: body.email,
         phone: body.phone,
         passwordHash: hashedPassword,
+        ...(this.isAdminEmail(body.email) && { role: 'ADMIN' as Role }),
       },
     });
 
