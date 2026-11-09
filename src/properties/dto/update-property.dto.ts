@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsEnum,
   IsIn,
@@ -5,7 +6,9 @@ import {
   IsNotEmpty,
   IsOptional,
   IsPositive,
+  IsNumber,
   IsString,
+  Max,
   Length,
   Min,
   MinLength,
@@ -64,4 +67,18 @@ export class UpdatePropertyDTO {
   @IsInt()
   @Min(0)
   bathrooms?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-90)
+  @Max(90)
+  lat?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(-180)
+  @Max(180)
+  lng?: number;
 }

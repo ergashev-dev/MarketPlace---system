@@ -30,17 +30,24 @@ enum PropertyStatus {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  fullName     String
-  email        String   @unique
-  passwordHash String
-  phone        String?
-  role         Role     @default(USER)
-  createdAt    DateTime @default(now())
+  id              Int       @id @default(autoincrement())
+  fullName        String
+  email           String    @unique
+  passwordHash    String
+  phone           String?
+  role            Role      @default(USER)
+  emailVerifiedAt DateTime?
+  blockedAt       DateTime?
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
 
-  properties Property[]
-  favorites  Favorite[]
-  inquiries  Inquiry[]
+  properties        Property[]
+  favorites         Favorite[]
+  inquiries         Inquiry[]
+  reports           Report[]
+  emailVerification EmailVerification?
+  notifications     Notification[]
+  auditLogs         AuditLog[]
 }
 
 model Category {
@@ -52,28 +59,37 @@ model Category {
 }
 
 model Property {
-  id          Int            @id @default(autoincrement())
-  title       String
-  description String
-  price       Float
-  currency    String         @default("USD")
-  listingType ListingType
-  status      PropertyStatus @default(PENDING)
-  address     String
-  city        String
-  area        Float
-  rooms       Int
-  bathrooms   Int
-  createdAt   DateTime       @default(now())
+  id                   Int            @id @default(autoincrement())
+  title                String
+  description          String
+  price                Float
+  currency             String         @default("USD")
+  listingType          ListingType
+  status               PropertyStatus @default(PENDING)
+  address              String
+  city                 String
+  area                 Float
+  rooms                Int
+  bathrooms            Int
+  rejectReason         String?
+  lat                  Float?
+  lng                  Float?
+  viewCount            Int            @default(0)
+  closedAt             DateTime?
+  expiryReminderSentAt DateTime?
+  expiresAt            DateTime?
+  createdAt            DateTime       @default(now())
 
   ownerId    Int
   owner      User     @relation(fields: [ownerId], references: [id])
   categoryId Int
   category   Category @relation(fields: [categoryId], references: [id])
 
-  images    PropertyImage[]
-  favorites Favorite[]
-  inquiries Inquiry[]
+  images     PropertyImage[]
+  favorites  Favorite[]
+  inquiries  Inquiry[]
+  reports    Report[]
+  viewsDaily PropertyViewDaily[]
 }
 
 model PropertyImage {
@@ -99,13 +115,78 @@ model Favorite {
 }
 
 model Inquiry {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   message   String
   phone     String
-  createdAt DateTime @default(now())
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
 
   senderId   Int
   sender     User     @relation(fields: [senderId], references: [id])
   propertyId Int
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+}
+
+model Report {
+  id        Int      @id @default(autoincrement())
+  reason    String
+  message   String?
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  reporterId Int
+  reporter   User     @relation(fields: [reporterId], references: [id])
+
+  @@unique([reporterId, propertyId])
+}
+
+model EmailVerification {
+  id        Int      @id @default(autoincrement())
+  tokenHash String   @unique
+  expiresAt DateTime
+  sentAt    DateTime @default(now())
+
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        Int       @id @default(autoincrement())
+  type      String
+  text      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  action     String
+  targetType String
+  targetId   Int?
+  details    String?
+  createdAt  DateTime @default(now())
+
+  adminId Int?
+  admin   User? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+}
+
+model PropertyViewDaily {
+  id    Int      @id @default(autoincrement())
+  day   DateTime @db.Date
+  count Int      @default(0)
+
+  propertyId Int
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([propertyId, day])
 }

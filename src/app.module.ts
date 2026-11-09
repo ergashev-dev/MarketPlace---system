@@ -11,9 +11,15 @@ import { join } from 'path';
 import { AdminModule } from './admin/admin.module.js';
 import { FavoritesModule } from './favorites/favorites.module.js';
 import { InquiriesModule } from './inquiries/inquiries.module.js';
+import { NotificationsModule } from './notifications/notifications.module.js';
+import { AuditModule } from './audit/audit.module.js';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { GLOBAL_THROTTLE } from './common/throttle.config.js';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([GLOBAL_THROTTLE]),
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
@@ -26,8 +32,10 @@ import { InquiriesModule } from './inquiries/inquiries.module.js';
     AdminModule,
     FavoritesModule,
     InquiriesModule,
+    NotificationsModule,
+    AuditModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}
